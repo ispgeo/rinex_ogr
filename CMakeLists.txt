@@ -29,6 +29,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rinex.pc DESTINATION lib/pkgconfig)
 #############################################################################
 # Testing
 
-add_executable(test_1 test/1.cpp)
+add_executable(test_1 test/base.cpp test/1.cpp)
 target_link_libraries(test_1 rinex ${GDAL_LIBRARY})
 

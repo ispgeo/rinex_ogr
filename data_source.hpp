@@ -12,9 +12,6 @@ class CDataSource : public GDALDataset
 
 	public:
 
-		CDataSource();
-		~CDataSource();
-
 		int open(const string fname);
 
 		OGRLayer * GetLayer(int ind) override;

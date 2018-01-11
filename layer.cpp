@@ -5,39 +5,69 @@ CLayer::CLayer(const string fname)
 {
 	const string base_fname = CPLGetBasename(fname.c_str());
 	const string path = CPLGetPath(fname.c_str());
-    auto p_feature_defn = new OGRFeatureDefn(base_fname.c_str());
 
-    SetDescription(base_fname.c_str());
+	// #############################################################################
+	// Spatial reference
+
+	spatial_ref.importFromEPSG(6934);
+
+	// #############################################################################
+	// Feature definition
+
+    auto p_feature_defn = new OGRFeatureDefn(base_fname.c_str());
 
 	feature_defn.reset(p_feature_defn);
     feature_defn->Reference();
-    feature_defn->SetGeomType(wkbMultiPoint);
+	feature_defn->SetGeomType(wkbPoint);
 
-    OGRFieldDefn field("MarkerName", OFTString);
-    feature_defn->AddFieldDefn(& field);
+	{
+		OGRGeomFieldDefn * field = feature_defn->GetGeomFieldDefn(0);
+		field->SetSpatialRef(& spatial_ref);
+	}
+
+	{
+		OGRGeomFieldDefn field("ApproxPosition", wkbPoint);
+		field.SetSpatialRef(& spatial_ref);
+
+		feature_defn->AddGeomFieldDefn(& field);
+		approx_position_field_ind = feature_defn->GetGeomFieldIndex("ApproxPosition");
+	}
+
+	auto create_field = [ & ](const string field_name, const OGRFieldType type)
+	{
+		OGRFieldDefn field(field_name.c_str(), type);
+		feature_defn->AddFieldDefn(& field);
+	};
+
+	create_field("MarkerName", OFTString);
+
+	// ############################################################################ 
+	// Rinex load
 
 	load(path + "/" + base_fname);
+
+	// #############################################################################
+	// Other initialization
+    
+	SetDescription(base_fname.c_str());
 
 	layer_name = marker_name;
 	is_start_reading = true;
 }
 
-CLayer::~CLayer()
-{
-	;
-}
-
 void CLayer::load(const string path)
 {
 	string line;
-	ifstream fl(path + ".17o"); // TODO Really 17o?
+	ifstream fl;
 	smatch result;
-	unique_ptr<regex> marker_name_re(new regex("[[:space:]]*([^[:space:]]+)[[:space:]]*MARKER NAME"));
-	unique_ptr<regex> approx_position_re(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
+	unique_ptr<regex> marker_name_re, approx_position_re;
 
-	if(! fl.is_open())
-		// TODO exception
-		throw 1;
+	marker_name_re.reset(new regex("[[:space:]]*([^[:space:]]+)[[:space:]]*MARKER NAME"));
+	approx_position_re.reset(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
+	
+	fl.exceptions( ifstream::failbit | ifstream::badbit );
+	fl.open(path + ".17o"); // TODO Really 17o?
+	fl.exceptions( ifstream::badbit );
 
 	while(fl.good())
 	{
@@ -45,9 +75,9 @@ void CLayer::load(const string path)
 
 		if(approx_position_re && regex_search(line, result, * approx_position_re))
 		{
-			approx_position.x = stod(result[1]);
-			approx_position.y = stod(result[2]);
-			approx_position.z = stod(result[3]);
+			approx_position.setX(stod(result[1]));
+			approx_position.setY(stod(result[2]));
+			approx_position.setZ(stod(result[3]));
 
 			approx_position_re.reset();
 		}
@@ -59,23 +89,29 @@ void CLayer::load(const string path)
 			marker_name_re.reset();
 		}
 	}
+
+	eval(path);
 }
 
-void CLayer::ResetReading()
+void CLayer::eval(const string path)
 {
-	is_start_reading = true;
+	// TODO
+	position.setX(1);
+	position.setY(2);
+	position.setZ(3);
 }
 
 OGRFeature * CLayer::GetNextFeature()
 {
 	if(is_start_reading)
 	{
-		is_start_reading = false;
-
 		OGRFeature * feature = new OGRFeature(feature_defn.get());
 
+		is_start_reading = false;
+
 		feature->SetFID(0);
-		feature->SetGeometryDirectly(new OGRPoint(approx_position.x, approx_position.y, approx_position.z));
+		feature->SetGeometry(& position);
+		feature->SetGeomField(approx_position_field_ind, & approx_position);
 		feature->SetField("MarkerName", marker_name.c_str());
 
 		return feature;

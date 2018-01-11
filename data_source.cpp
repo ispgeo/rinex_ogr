@@ -1,16 +1,6 @@
 
 #include "data_source.hpp"
 
-CDataSource::CDataSource()
-{
-	;
-}
-
-CDataSource::~CDataSource()
-{
-	;
-}
-
 int CDataSource::open(const string fname)
 {
 	auto p_layer = new CLayer(fname);
