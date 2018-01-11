@@ -6,11 +6,12 @@
 
 static int rinex_driver_identify(GDALOpenInfo * info)
 {
+	const regex ext_re(".*\\.[[:digit:]]{2}o$");
+
 	if(info->eAccess != GA_ReadOnly)
 		return FALSE;
 
-	// TODO - really 17o? 
-	if(! EQUAL(CPLGetExtension(info->pszFilename), "17o"))
+	if(! regex_match(info->pszFilename, ext_re))
 		return FALSE;
 
 	return TRUE;

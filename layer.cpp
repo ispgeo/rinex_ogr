@@ -4,7 +4,7 @@
 CLayer::CLayer(const string fname)
 {
 	const string base_fname = CPLGetBasename(fname.c_str());
-	const string path = CPLGetPath(fname.c_str());
+	const string path = fname.substr(0, fname.length() - 1);
 
 	// #############################################################################
 	// Spatial reference
@@ -44,7 +44,7 @@ CLayer::CLayer(const string fname)
 	// ############################################################################ 
 	// Rinex load
 
-	load(path + "/" + base_fname);
+	load(path);
 
 	// #############################################################################
 	// Other initialization
@@ -66,7 +66,7 @@ void CLayer::load(const string path)
 	approx_position_re.reset(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
 	
 	fl.exceptions( ifstream::failbit | ifstream::badbit );
-	fl.open(path + ".17o"); // TODO Really 17o?
+	fl.open(path + "o");
 	fl.exceptions( ifstream::badbit );
 
 	while(fl.good())
