@@ -1,0 +1,10 @@
+
+libdir = @CMAKE_INSTALL_PREFIX@/lib
+includedir = @CMAKE_INSTALL_PREFIX@/include
+
+Name: rinex ogr driver
+Description: GDAL/OGR driver for Rinex format version 2 and 3
+Version: 1.0
+Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lrinex
+Cflags: -I@CMAKE_INSTALL_PREFIX@/include -Wall
+
