@@ -10,6 +10,7 @@ cmake_minimum_required(VERSION 3.0)
 project(rinex)
 
 find_package(GDAL REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 set(CXX_FLAGS "-Wall -pipe -fPIC -std=c++17")
 string(REPLACE ";" " " CXX_FLAGS " ${CXX_FLAGS}")
@@ -17,8 +18,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}" CACHE string "" FORCE)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${GDAL_INCLUDE_DIR})
 
-add_library(rinex SHARED rinex.cpp data_source.cpp layer.cpp)
-target_link_libraries(rinex ${GDAL_LIBRARY})
+add_library(rinex SHARED rinex.cpp data_source.cpp layer.cpp obs.cpp nav.cpp lib.cpp)
+target_link_libraries(rinex ${GDAL_LIBRARY} Eigen3::Eigen)
 
 configure_file(rinex.pc.in rinex.pc)
 

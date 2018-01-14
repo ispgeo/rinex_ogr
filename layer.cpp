@@ -1,7 +1,7 @@
 
 #include "layer.hpp"
 
-CLayer::CLayer(const string fname)
+CLayer::CLayer(const string & fname)
 {
 	const string base_fname = CPLGetBasename(fname.c_str());
 	const string path = fname.substr(0, fname.length() - 1);
@@ -33,7 +33,7 @@ CLayer::CLayer(const string fname)
 		approx_position_field_ind = feature_defn->GetGeomFieldIndex("ApproxPosition");
 	}
 
-	auto create_field = [ & ](const string field_name, const OGRFieldType type)
+	auto create_field = [ & ](const string & field_name, const OGRFieldType & type)
 	{
 		OGRFieldDefn field(field_name.c_str(), type);
 		feature_defn->AddFieldDefn(& field);
@@ -55,7 +55,7 @@ CLayer::CLayer(const string fname)
 	is_start_reading = true;
 }
 
-void CLayer::load(const string path)
+void CLayer::load(const string & path)
 {
 	string line;
 	ifstream fl;
@@ -93,14 +93,6 @@ void CLayer::load(const string path)
 	eval(path);
 }
 
-void CLayer::eval(const string path)
-{
-	// TODO
-	position.setX(1);
-	position.setY(2);
-	position.setZ(3);
-}
-
 OGRFeature * CLayer::GetNextFeature()
 {
 	if(is_start_reading)
@@ -118,5 +110,42 @@ OGRFeature * CLayer::GetNextFeature()
 	}
 	
 	return NULL;
+}
+
+// ############################################################################ 
+
+void CLayer::eval(const string & path)
+{
+	unsigned v;
+	CObs obs(path + "o");
+	CNav nav(path + "N");
+    Vector3d x0 = obs.x0();
+	Vector3d x_result(x0);
+
+    // Эпохи
+    vector<CEpoch> epochs = obs.epochs();
+
+	for(auto & epoch : epochs)
+	{
+        // Ищем спутники, для которых известно положение в данную эпоху
+		vector<CSat> sats = epoch.sats(nav);
+
+		if(sats.size() < 4)
+			continue;
+
+		for(v = 0; v < 5; v++)
+		{
+			MatrixXd shft = shift(sats);
+
+			if(! isnan(shft(0, 0)))
+				x_result += shft;
+		}
+	}
+
+	x_result /= epochs.size();
+
+	position.setX(x_result[0]);
+	position.setY(x_result[1]);
+	position.setZ(x_result[2]);
 }
 

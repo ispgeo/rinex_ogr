@@ -3,6 +3,8 @@
 #define LAYER_HPP
 
 #include "all.hpp"
+#include "obs.hpp"
+#include "nav.hpp"
 
 class CLayer : public OGRLayer
 {
@@ -16,12 +18,12 @@ class CLayer : public OGRLayer
 	OGRPoint approx_position, position;
 	string marker_name;
 
-	void load(const string path);
-	void eval(const string path);
+	void load(const string & path);
+	void eval(const string & path);
 	
 	public:
 	
-		CLayer(const string fname);
+		CLayer(const string & fname);
 
 		OGRFeature * GetNextFeature() override;
 
