@@ -19,7 +19,6 @@ class CLayer : public OGRLayer
 	string marker_name;
 
 	void load(const string & path);
-	void eval(const string & path);
 	
 	public:
 	

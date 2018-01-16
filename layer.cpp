@@ -57,40 +57,46 @@ CLayer::CLayer(const string & fname)
 
 void CLayer::load(const string & path)
 {
-	string line;
-	ifstream fl;
-	smatch result;
-	unique_ptr<regex> marker_name_re, approx_position_re;
+	unsigned v;
+	CObs obs(path + "o");
+	CNav nav(path + "N");
+    const Vector3d x0 = obs.x0();
+	Vector3d x(x0), x_result(0, 0, 0);
 
-	marker_name_re.reset(new regex("[[:space:]]*([^[:space:]]+)[[:space:]]*MARKER NAME"));
-	approx_position_re.reset(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
-	
-	fl.exceptions( ifstream::failbit | ifstream::badbit );
-	fl.open(path + "o");
-	fl.exceptions( ifstream::badbit );
+    // Эпохи
+    vector<CObsEpoch> & epochs = obs.epochs(); // TODO const?
 
-	while(fl.good())
+	for(auto & epoch : epochs)
 	{
-		getline(fl, line);
+        // Ищем спутники, для которых известно положение в данную эпоху
+		vector<SObsSat> sats = epoch.sats(nav);
 
-		if(approx_position_re && regex_search(line, result, * approx_position_re))
+		if(sats.size() < 4)
+			continue;
+
+		for(v = 0; v < 5; v++)
 		{
-			approx_position.setX(stod(result[1]));
-			approx_position.setY(stod(result[2]));
-			approx_position.setZ(stod(result[3]));
+			// TODO reeval sat pos
+			MatrixXd shft = shift(sats);
 
-			approx_position_re.reset();
+			if(! isnan(shft(0, 0)))
+				x += shft;
 		}
 
-		if(marker_name_re && regex_search(line, result, * marker_name_re))
-		{
-			marker_name = result[1];
-
-			marker_name_re.reset();
-		}
+		x_result += x;
 	}
 
-	eval(path);
+	x_result /= epochs.size();
+
+	approx_position.setX(x0[0]);
+	approx_position.setY(x0[1]);
+	approx_position.setZ(x0[2]);
+
+	position.setX(x_result[0]);
+	position.setY(x_result[1]);
+	position.setZ(x_result[2]);
+
+	marker_name = obs.marker_name();
 }
 
 OGRFeature * CLayer::GetNextFeature()
@@ -110,42 +116,5 @@ OGRFeature * CLayer::GetNextFeature()
 	}
 	
 	return NULL;
-}
-
-// ############################################################################ 
-
-void CLayer::eval(const string & path)
-{
-	unsigned v;
-	CObs obs(path + "o");
-	CNav nav(path + "N");
-    Vector3d x0 = obs.x0();
-	Vector3d x_result(x0);
-
-    // Эпохи
-    vector<CEpoch> epochs = obs.epochs();
-
-	for(auto & epoch : epochs)
-	{
-        // Ищем спутники, для которых известно положение в данную эпоху
-		vector<CSat> sats = epoch.sats(nav);
-
-		if(sats.size() < 4)
-			continue;
-
-		for(v = 0; v < 5; v++)
-		{
-			MatrixXd shft = shift(sats);
-
-			if(! isnan(shft(0, 0)))
-				x_result += shft;
-		}
-	}
-
-	x_result /= epochs.size();
-
-	position.setX(x_result[0]);
-	position.setY(x_result[1]);
-	position.setZ(x_result[2]);
 }
 

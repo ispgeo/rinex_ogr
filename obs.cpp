@@ -3,16 +3,17 @@
 
 const double c = 2.99792458E+8;
 
-Vector3d shift(vector<CSat> & sats)
+Vector3d shift(vector<SObsSat> & sats)
 {
 	const unsigned sats_num = sats.size();
 	unsigned ind;
 	VectorXd w(sats_num);
-	MatrixXd a, shft;
+	MatrixXd a(sats_num, 3), shft;
 
 	for(ind = 0; ind < sats_num; ind++)
 	{
 		const Vector3d ta = sats[ind].a();
+
 		a(ind, 0) = ta[0];
 		a(ind, 1) = ta[1];
 		a(ind, 2) = ta[2];
@@ -62,13 +63,32 @@ CDateTime::CDateTime(const string & epoch_name)
 
 // ############################################################################ 
     
-CSat::CSat(const string & name, const Vector3d & x0) :
+SObsSat::SObsSat(ifstream & fl, const string & name, const Vector3d & x0, const vector<string> & types_of_observ) :
 	_name(name), _x0(x0)
 {
-	; // TODO
+	string line;
+	const unsigned num = types_of_observ.size();
+	unsigned ind, ind_in_line;
+
+	for(ind = 0, ind_in_line = 0; ind < num; ind++)
+	{
+		if(! (ind % 5))
+		{
+			line = next_line(fl);
+			ind_in_line = 0;
+		}
+
+		string _value = substr_and_del_space(line, ind_in_line, 16);
+
+		if(_value.empty())
+			_value = "nan";
+
+		values[types_of_observ[ind]] = stod(_value);
+		ind_in_line += 16;
+	}
 }
 
-double CSat::iono_free(const string & key_1, const string & key_2)
+double SObsSat::iono_free(const string & key_1, const string & key_2)
 {
 	const double v_1 = values[key_1];
 	const double v_2 = values[key_2];
@@ -78,7 +98,7 @@ double CSat::iono_free(const string & key_1, const string & key_2)
     return pr;
 }
 
-void CSat::eval(const CNav & nav, const string & epoch_name)
+void SObsSat::eval(CNav & nav, const string & epoch_name)
 {
 	const CDateTime tm(epoch_name);
 	const string sat_epoch = get_closest_measurements(epoch_name, nav);
@@ -88,31 +108,31 @@ void CSat::eval(const CNav & nav, const string & epoch_name)
 	else
 	{
 		// Declare Variables
-		const double ecc = nav.field(_name, sat_epoch, "Ecc");
-		const double A = pow(nav.field(_name, sat_epoch, "SqrtA"), 2);
-		const double deln = nav.field(_name, sat_epoch, "Deln");
-		const double TOE = nav.field(_name, sat_epoch, "TOE");
-		const double M0 = nav.field(_name, sat_epoch, "Mo");
-		const double a0 = nav.field(_name, sat_epoch, "SV_CLB");
-		const double a1 = nav.field(_name, sat_epoch, "SV_CLD");
-		const double a2 = nav.field(_name, sat_epoch, "SV_CLR");
-		const double tgd = nav.field(_name, sat_epoch, "TGD");
+		const double ecc = nav.sat(sat_epoch, _name).value("Ecc");
+		const double A = pow(nav.sat(sat_epoch, _name).value("SqrtA"), 2);
+		const double deln = nav.sat(sat_epoch, _name).value("Deln");
+		const double TOE = nav.sat(sat_epoch, _name).value("TOE");
+		const double M0 = nav.sat(sat_epoch, _name).value("Mo");
+		const double a0 = nav.sat(sat_epoch, _name).value("SV_CLB");
+		const double a1 = nav.sat(sat_epoch, _name).value("SV_CLD");
+		const double a2 = nav.sat(sat_epoch, _name).value("SV_CLR");
+		const double tgd = nav.sat(sat_epoch, _name).value("TGD");
 		const double pr = iono_free_P1_P2();
 
 		// Argument of the Perigee
-		const double ohm = nav.field(_name, sat_epoch, "Omega");
+		const double ohm = nav.sat(sat_epoch, _name).value("Omega");
 		
-		const double cus = nav.field(_name, sat_epoch, "Cus");
-		const double crs = nav.field(_name, sat_epoch, "Crs");
-		const double cis = nav.field(_name, sat_epoch, "Cis");
-		const double cuc = nav.field(_name, sat_epoch, "Cuc");
-		const double crc = nav.field(_name, sat_epoch, "Crc");
-		const double cic = nav.field(_name, sat_epoch, "Cic");
+		const double cus = nav.sat(sat_epoch, _name).value("Cus");
+		const double crs = nav.sat(sat_epoch, _name).value("Crs");
+		const double cis = nav.sat(sat_epoch, _name).value("Cis");
+		const double cuc = nav.sat(sat_epoch, _name).value("Cuc");
+		const double crc = nav.sat(sat_epoch, _name).value("Crc");
+		const double cic = nav.sat(sat_epoch, _name).value("Cic");
 		
-		const double i0 = nav.field(_name, sat_epoch, "Io");
-		const double IDOT = nav.field(_name, sat_epoch, "IDOT");
-		const double OHM = nav.field(_name, sat_epoch, "OMEGA");
-		const double OHMDOT = nav.field(_name, sat_epoch, "OMEGA_DOT");
+		const double i0 = nav.sat(sat_epoch, _name).value("Io");
+		const double IDOT = nav.sat(sat_epoch, _name).value("IDOT");
+		const double OHM = nav.sat(sat_epoch, _name).value("OMEGA");
+		const double OHMDOT = nav.sat(sat_epoch, _name).value("OMEGA_DOT");
 		
 		// Mean Motion
 		const double mu = 3.986005e+14;
@@ -200,13 +220,13 @@ void CSat::eval(const CNav & nav, const string & epoch_name)
 	_a = Vector3d(- (_pos[0] - _x0[0]) / _d, - (_pos[1] - _x0[1]) / _d, - (_pos[2] - _x0[2]) / _d);
 }
 
-string CSat::get_closest_measurements(const string & epoch_name, const CNav & nav)
+string SObsSat::get_closest_measurements(const string & epoch_name, CNav & nav)
 {
     const CDateTime tm(epoch_name);
     CDateTime max_sat_tm;
     string sat_epoch_name = "";
 
-	for(auto & key : nav.epochs(_name))
+	for(auto & key : nav.epochs_name(_name))
 	{
 		const CDateTime key_tm(key);
         const double d = abs(key_tm.seconds() - tm.seconds());
@@ -221,7 +241,7 @@ string CSat::get_closest_measurements(const string & epoch_name, const CNav & na
     return sat_epoch_name;
 }
 
-double CSat::w()
+double SObsSat::w()
 {
 	const double pr = iono_free_P1_P2();
 	const double l = pr + _pos[3] * c;
@@ -232,16 +252,54 @@ double CSat::w()
 
 // ############################################################################ 
 
-CEpoch::CEpoch(const string & name, const Vector3d & x0) :
-	_name(name)
+CObsEpoch::CObsEpoch(ifstream & fl, const Vector3d & x0, const vector<string> & types_of_observ)
 {
-	// TODO
-	;
+	string line = next_line(fl);
+
+	// ############################################################################ 
+	// Epoch name
+
+	_name = name_from_date(line, 0, 11);
+
+	// ############################################################################ 
+	// Flag
+
+	_flag = stoi(line.substr(26, 3));
+
+	// ############################################################################ 
+	// Sat num
+
+	const unsigned sat_num = stoi(line.substr(29, 3));
+
+	// ############################################################################ 
+	// Sat names
+
+	unsigned sat_ind, line_pos = 32;
+	vector<string> sat_name;
+
+	for(sat_ind = 1; sat_ind <= sat_num; sat_ind ++)
+	{
+		sat_name.push_back(line.substr(line_pos, 3));
+
+		if(sat_ind % 12)
+			line_pos += 3;
+		else
+		{
+			line = next_line(fl);
+			line_pos = 32;
+		}
+	}
+
+	// ############################################################################
+	// Sats
+
+	for(auto & sat : sat_name)
+		_sats.push_back(SObsSat(fl, sat, x0, types_of_observ));
 }
 
-vector<CSat> CEpoch::sats(const CNav & nav)
+vector<SObsSat> CObsEpoch::sats(CNav & nav)
 {
-	vector<CSat> res_sats;
+	vector<SObsSat> res_sats;
 
 	for(auto & sat : _sats)
 	{
@@ -259,17 +317,63 @@ vector<CSat> CEpoch::sats(const CNav & nav)
 
 CObs::CObs(const string & fname)
 {
-	; // TODO
-}
+	string line;
+	ifstream fl;
+	smatch result;
+	vector<string> types_of_observ;
+	unique_ptr<regex> marker_name_re, approx_position_re, types_of_observ_re;
+	regex head_end_re(".*END OF HEADER.*$");
 
-// Первоначальная позиция
-Vector3d CObs::x0()
-{
-	; // TODO
-}
+	marker_name_re.reset(new regex("[[:space:]]*([^[:space:]]+)[[:space:]]*MARKER NAME"));
+	approx_position_re.reset(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
+	types_of_observ_re.reset(new regex(".*TYPES OF OBSERV.*$"));
+	
+	fl.exceptions( ifstream::failbit | ifstream::badbit );
+	fl.open(fname);
+	fl.exceptions( ifstream::badbit );
 
-vector<CEpoch> CObs::epochs()
-{
-	; // TODO
+	while(fl.good())
+	{
+		line = next_line(fl);
+
+		if(approx_position_re && regex_search(line, result, * approx_position_re))
+		{
+			_x0[0] = stod(result[1]);
+			_x0[1] = stod(result[2]);
+			_x0[2] = stod(result[3]);
+		}
+
+		if(marker_name_re && regex_search(line, result, * marker_name_re))
+		{
+			_marker_name = result[1];
+
+			marker_name_re.reset();
+		}
+
+		if(types_of_observ_re && regex_match(line, * types_of_observ_re))
+		{
+			// TODO Multiline (num > 9) string
+
+			unsigned v;
+			const unsigned num = stoi(line.substr(0, 6));
+
+			for(v = 0; v < num; v++)
+			{
+				const string type_of_observ = substr_and_del_space(line, (v + 1) * 6, 6);
+
+				types_of_observ.push_back(type_of_observ);
+			}
+		}
+
+		if(regex_match(line, head_end_re))
+			break;
+	}
+
+	while(fl.good())
+	{
+		_epochs.push_back(CObsEpoch(fl, _x0, types_of_observ));
+
+		fl.peek(); // Return the next character without extracting it - enable check EOF for next good() without getline
+	}
 }
 

@@ -9,9 +9,8 @@
 class CDateTime
 {
 
-	double year, month, day, hour, minute, second, _seconds;
-
 	public:
+	double year, month, day, hour, minute, second, _seconds;
 
 		CDateTime() { ; };
 		CDateTime(const string & epoch_name);
@@ -20,7 +19,7 @@ class CDateTime
 
 };
 
-class CSat
+class SObsSat
 {
 
 	const string _name;
@@ -30,11 +29,11 @@ class CSat
 	Vector3d _a;
 	double _d;
 
-	string get_closest_measurements(const string & epoch_name, const CNav & nav);
+	string get_closest_measurements(const string & epoch_name, CNav & nav);
 	
 	public:
 
-		CSat(const string & name, const Vector3d & x0);
+		SObsSat(ifstream & fl, const string & name, const Vector3d & x0, const vector<string> & types_of_observ);
 
 		// Расчитываем псевдодальность по http://www.navipedia.net/index.php/Ionosphere-free_Combination_for_Dual_Frequency_Receivers
 		double iono_free(const string & key_1, const string & key_2);
@@ -42,42 +41,49 @@ class CSat
 		// Получаем псевдодальности для каждого спутника для несущих частот L1 и L2
 		inline double iono_free_P1_P2() { return iono_free("P1", "P2"); };
 
-		void eval(const CNav & nav, const string & epoch_name);
+		void eval(CNav & nav, const string & epoch_name);
 		double w();
 
 		inline Vector4d pos() const { return _pos; };
 		inline Vector3d a() const { return _a; };
 		inline double d() const { return _d; };
+		inline string name() const { return _name; };
 
 };
 
-class CEpoch
+class CObsEpoch
 {
 
-	const string _name;
-	vector<CSat> _sats;
+	string _name;
+	unsigned _flag;
+	vector<SObsSat> _sats;
 
 	public:
 
-		CEpoch(const string & name, const Vector3d & x0);
+		CObsEpoch(ifstream & fl, const Vector3d & x0, const vector<string> & types_of_observ);
 
-		vector<CSat> sats(const CNav & nav);
+		vector<SObsSat> sats(CNav & nav);
 
 };
 
 class CObs
 {
+	
+	string _marker_name;
+	Vector3d _x0;
+	vector<CObsEpoch> _epochs;
 
 	public:
 
 		CObs(const string & fname);
 
-	    Vector3d x0();
-		vector<CEpoch> epochs();
+		inline const string & marker_name() { return _marker_name; };
+	    inline const Vector3d & x0() { return _x0; };
+		inline vector<CObsEpoch> & epochs() { return _epochs; };
 
 };
 
-Vector3d shift(vector<CSat> & sats);
+Vector3d shift(vector<SObsSat> & sats);
 
 #endif
 
