@@ -1,0 +1,42 @@
+
+<html>
+
+	<head>
+
+		<title>Rinex</title>
+		
+	</head>
+
+	<body bgcolor="#ffffff">
+
+
+		<h1>Rinex</h1>
+		
+		(GDAL/OGR &gt;= 2.2.3)
+		
+		<p>This driver currently read rinex 2.* files and still in development.</p> <!-- TODO Не забывать обновлять -->
+
+
+		<h3>Available fields in features:</h3>
+		
+		<ul>
+			
+			<li>default geometry - point 3D, approx position;</li>
+			<li>Position = point 3D, position by *N GPS file;</li>
+			<li>MarkerName - string;</li>
+			<li>AntennaModel, AntennaType - string;</li>
+			<li>RecieverModel, RecieverType, RecieverVersion - string;</li>
+			<li>FirstObsDateTime - date time;</li>
+			<li>FirstObsTimeType - string (GPS, GLO, GAL);</li>
+			<li>LastObsDateTime - date time;</li>
+			<li>LastObsTimeType - string (GPS, GLO, GAL).</li>
+		
+		</ul>
+		
+		<p>Powered by <a href="http://pgeo.ru">ISP "Geo"</a></p>
+		<p><a href="mailto:akinin.m.v@gmail.com">Feedback and answer</a></p>
+	
+	</body>
+
+</html>
+

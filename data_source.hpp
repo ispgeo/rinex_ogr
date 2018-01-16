@@ -15,7 +15,7 @@ class CDataSource : public GDALDataset
 		int open(const string fname);
 
 		OGRLayer * GetLayer(int ind) override;
-		inline int TestCapability(const char * cap) override { return FALSE; }; // TODO - only read in this moment
+		inline int TestCapability(const char * cap) override { return FALSE; }; // Only read in this moment
 		inline int GetLayerCount() override { return 1; };
 
 };

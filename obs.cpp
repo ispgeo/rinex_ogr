@@ -28,40 +28,6 @@ Vector3d shift(vector<CObsSat> & sats)
 }
 
 // ############################################################################ 
-
-CDateTime::CDateTime(const string & epoch_name)
-{
-	const vector<string> t = split(epoch_name, ':');
-    double yy, mm, hh;
-
-	year = yy = 2000 + stod(t[0]);
-	month = mm = stod(t[1]);
-	day = stod(t[2]);
-	hour = hh = stod(t[3]);
-	minute = stod(t[4]);
-	second = floor(stod(t[5]));
-
-    hh += (minute / 60) + (second / 3600);
-
-	if(mm <= 2)
-	{
-		yy--;
-		mm += 12;
-	}
-
-    const double jd = floor(365.25 * (yy + 4716)) + floor(30.6001 * (mm + 1)) + day + (hh / 24) - 1537.5;
-    const double a = floor(jd + 0.5);
-    const double b = a + 1537;
-    const double c = floor((b - 122.1) / 365.25);
-    const double e = floor(365.25 * c);
-    const double f = floor((b - e) / 30.6001);
-    const double d = b - e - floor(30.6001 * f) + fmod(jd + 0.5, 1);
-    const double day_of_week = fmod(floor(jd+0.5), 7);
-
-	_seconds = (fmod(d, 1) + day_of_week + 1) * 86400;
-}
-
-// ############################################################################ 
     
 CObsSat::CObsSat(ifstream & fl, const string & name, const vector<string> & types_of_observ) :
 	_name(name)
@@ -100,7 +66,7 @@ double CObsSat::iono_free(const string & key_1, const string & key_2)
 
 void CObsSat::eval(CNav & nav, const string & epoch_name)
 {
-	const CDateTime tm(epoch_name);
+	const CDateTime tm = CDateTime::from_epoch_name(epoch_name);
 	const string sat_epoch = get_closest_measurements(epoch_name, nav);
 
 	if(sat_epoch == "")
@@ -224,13 +190,13 @@ void CObsSat::fx(const Vector3d & x0)
 
 string CObsSat::get_closest_measurements(const string & epoch_name, CNav & nav)
 {
-    const CDateTime tm(epoch_name);
+    const CDateTime tm = CDateTime::from_epoch_name(epoch_name);
     CDateTime max_sat_tm;
     string sat_epoch_name = "";
 
 	for(auto & key : nav.epochs_name(_name))
 	{
-		const CDateTime key_tm(key);
+		const CDateTime key_tm = CDateTime::from_epoch_name(key);
         const double d = abs(key_tm.seconds() - tm.seconds());
 
         if(d <= 7200 && (sat_epoch_name == "" || max_sat_tm.seconds() < key_tm.seconds()))
@@ -321,38 +287,98 @@ CObs::CObs(const string & fname)
 {
 	string line;
 	ifstream fl;
-	smatch result;
+	vector<string> result;
 	vector<string> types_of_observ;
-	unique_ptr<regex> marker_name_re, approx_position_re, types_of_observ_re;
+	unique_ptr<regex> marker_name_re, approx_position_re, types_of_observ_re, antenna_re, reciever_re, first_obs_re, last_obs_re;
 	regex head_end_re(".*END OF HEADER.*$");
 
-	marker_name_re.reset(new regex("[[:space:]]*([^[:space:]]+)[[:space:]]*MARKER NAME"));
+	marker_name_re.reset(new regex("^(.{20}).*MARKER NAME"));
+	antenna_re.reset(new regex("^(.{20})(.{20}).*ANT # / TYPE"));
+	reciever_re.reset(new regex("^(.{20})(.{20})(.{20}).*REC # / TYPE / VERS"));
 	approx_position_re.reset(new regex("[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*([[:digit:]\\.]+)[[:space:]]*APPROX POSITION XYZ"));
 	types_of_observ_re.reset(new regex(".*TYPES OF OBSERV.*$"));
+	first_obs_re.reset(new regex("^(.{6})(.{6})(.{6})(.{6})(.{6})(.{13}).{5}(.{3}).*TIME OF FIRST OBS"));
+	last_obs_re.reset(new regex("^(.{6})(.{6})(.{6})(.{6})(.{6})(.{13}).{5}(.{3}).*TIME OF LAST OBS"));
 	
 	fl.exceptions( ifstream::failbit | ifstream::badbit );
 	fl.open(fname);
 	fl.exceptions( ifstream::badbit );
 
+	auto check_re = [ & ] (unique_ptr<regex> & re)
+	{
+		smatch _result;
+
+		result.clear();
+
+		if(re && regex_search(line, _result, * re))
+		{
+			unsigned v;
+
+			re.reset();
+
+			for(v = 1; v < _result.size(); v++)
+				result.push_back(strip_space_in_start_and_end(_result[v]));
+
+			return true;
+		}
+
+		return false;
+	};
+
 	while(fl.good())
 	{
 		line = next_line(fl);
 
-		if(approx_position_re && regex_search(line, result, * approx_position_re))
+		if(check_re(approx_position_re))
 		{
-			_x0[0] = stod(result[1]);
-			_x0[1] = stod(result[2]);
-			_x0[2] = stod(result[3]);
+			_x0[0] = stod(result[0]);
+			_x0[1] = stod(result[1]);
+			_x0[2] = stod(result[2]);
 		}
 
-		if(marker_name_re && regex_search(line, result, * marker_name_re))
-		{
-			_marker_name = result[1];
+		if(check_re(marker_name_re))
+			_marker_name = result[0];
 
-			marker_name_re.reset();
+		if(check_re(antenna_re))
+		{
+			_antenna_model = result[0];
+			_antenna_type = result[1];
 		}
 
-		if(types_of_observ_re && regex_match(line, * types_of_observ_re))
+		if(check_re(reciever_re))
+		{
+			_reciever_model = result[0];
+			_reciever_type = result[1];
+			_reciever_version = result[2];
+		}
+
+		if(check_re(first_obs_re))
+		{
+			_first_obs = CDateTime(
+					stod(result[0]),
+					stod(result[1]),
+					stod(result[2]),
+					stod(result[3]),
+					stod(result[4]),
+					stod(result[5]));
+
+			_first_obs_type = result[6];
+		}
+
+		if(check_re(last_obs_re))
+		{
+			_last_obs = CDateTime(
+					stod(result[0]),
+					stod(result[1]),
+					stod(result[2]),
+					stod(result[3]),
+					stod(result[4]),
+					stod(result[5]));
+
+			_last_obs_type = result[6];
+		}
+
+		if(check_re(types_of_observ_re))
 		{
 			// TODO Multiline (num > 9) string
 

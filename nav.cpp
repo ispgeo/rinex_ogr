@@ -87,6 +87,6 @@ CNavSat & CNav::sat(const string & epoch_name, const string & sat_name)
 		if(sat.name() == sat_name && sat.epoch() == epoch_name)
 			return sat;
 
-	throw 0; // TODO Bad
+	throw runtime_error("Error: sattelite " + sat_name + " not found in epoch " + epoch_name);
 }
 

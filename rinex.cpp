@@ -45,7 +45,7 @@ void RegisterOGRRinex()
     driver->SetMetadataItem(GDAL_DCAP_VECTOR, "YES");
     driver->SetMetadataItem(GDAL_DMD_LONGNAME, "Rinex 2 and 3 driver");
     driver->SetMetadataItem(GDAL_DMD_EXTENSION, "");
-    // driver->SetMetadataItem(GDAL_DMD_HELPTOPIC, "drv_rinex.html"); // TODO - create doc
+    driver->SetMetadataItem(GDAL_DMD_HELPTOPIC, "drv_rinex.html");
     driver->pfnOpen = rinex_driver_open;
     driver->pfnIdentify = rinex_driver_identify;
     GetGDALDriverManager()->RegisterDriver(driver);

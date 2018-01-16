@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <string>
+#include <sstream>
 #include <ogrsf_frmts.h>
 #include <rinex.hpp>
 

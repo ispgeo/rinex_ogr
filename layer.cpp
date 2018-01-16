@@ -26,11 +26,11 @@ CLayer::CLayer(const string & fname)
 	}
 
 	{
-		OGRGeomFieldDefn field("ApproxPosition", wkbPoint);
+		OGRGeomFieldDefn field("Position", wkbPoint);
 		field.SetSpatialRef(& spatial_ref);
 
 		feature_defn->AddGeomFieldDefn(& field);
-		approx_position_field_ind = feature_defn->GetGeomFieldIndex("ApproxPosition");
+		position_field_ind = feature_defn->GetGeomFieldIndex("Position");
 	}
 
 	auto create_field = [ & ](const string & field_name, const OGRFieldType & type)
@@ -40,36 +40,45 @@ CLayer::CLayer(const string & fname)
 	};
 
 	create_field("MarkerName", OFTString);
+	create_field("AntennaModel", OFTString);
+	create_field("AntennaType", OFTString);
+	create_field("RecieverModel", OFTString);
+	create_field("RecieverType", OFTString);
+	create_field("RecieverVersion", OFTString);
+	create_field("FirstObsDateTime", OFTDateTime);
+	create_field("LastObsDateTime", OFTDateTime);
+	create_field("FirstObsTimeType", OFTString);
+	create_field("LastObsTimeType", OFTString);
 
 	// ############################################################################ 
-	// Rinex load
+	// Rinex load and eval
 
-	load(path);
+	obs.reset(new CObs(path + "o"));
+	nav.reset(new CNav(path + "N"));
+
+	eval();
 
 	// #############################################################################
 	// Other initialization
     
 	SetDescription(base_fname.c_str());
 
-	layer_name = marker_name;
 	is_start_reading = true;
 }
 
-void CLayer::load(const string & path)
+void CLayer::eval()
 {
 	unsigned v;
-	CObs obs(path + "o");
-	CNav nav(path + "N");
-    const Vector3d x0 = obs.x0();
+    const Vector3d x0 = obs->x0();
 	Vector3d x(x0), x_result(0, 0, 0);
 
     // Эпохи
-    vector<CObsEpoch> & epochs = obs.epochs(); // TODO const?
+    vector<CObsEpoch> & epochs = obs->epochs();
 
 	for(auto & epoch : epochs)
 	{
         // Ищем спутники, для которых известно положение в данную эпоху
-		vector<CObsSat> sats = epoch.sats(nav);
+		vector<CObsSat> sats = epoch.sats(* nav);
 
 		if(sats.size() < 4)
 			continue;
@@ -97,8 +106,6 @@ void CLayer::load(const string & path)
 	position.setX(x_result[0]);
 	position.setY(x_result[1]);
 	position.setZ(x_result[2]);
-
-	marker_name = obs.marker_name();
 }
 
 OGRFeature * CLayer::GetNextFeature()
@@ -109,10 +116,22 @@ OGRFeature * CLayer::GetNextFeature()
 
 		is_start_reading = false;
 
+		const CDateTime & first_obs = obs->first_obs();
+		const CDateTime & last_obs = obs->last_obs();
+
 		feature->SetFID(0);
-		feature->SetGeometry(& position);
-		feature->SetGeomField(approx_position_field_ind, & approx_position);
-		feature->SetField("MarkerName", marker_name.c_str());
+		feature->SetGeometry(& approx_position);
+		feature->SetGeomField(position_field_ind, & position);
+		feature->SetField("MarkerName", obs->marker_name().c_str());
+		feature->SetField("AntennaModel", obs->antenna_model().c_str());
+		feature->SetField("AntennaType", obs->antenna_type().c_str());
+		feature->SetField("RecieverModel", obs->reciever_model().c_str());
+		feature->SetField("RecieverType", obs->reciever_type().c_str());
+		feature->SetField("RecieverVersion", obs->reciever_version().c_str());
+		feature->SetField("FirstObsDateTime", first_obs.year(), first_obs.month(), first_obs.day(), first_obs.hour(), first_obs.minute(), first_obs.second());
+		feature->SetField("LastObsDateTime", last_obs.year(), last_obs.month(), last_obs.day(), last_obs.hour(), last_obs.minute(), last_obs.second());
+		feature->SetField("FirstObsTimeType", obs->first_obs_type().c_str());
+		feature->SetField("LastObsTimeType", obs->last_obs_type().c_str());
 
 		return feature;
 	}

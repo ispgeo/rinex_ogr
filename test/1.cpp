@@ -31,20 +31,47 @@ int main(const int argc, const char * argv[])
 
 	layer->ResetReading();
 
+	auto get_date = [ & ](const string & field_name)
+	{
+		const int field_ind = feature->GetFieldIndex(field_name.c_str());
+		int year, month, day, hour, minute, second, flag;
+		stringstream str;
+
+		feature->GetFieldAsDateTime(field_ind, & year, & month, & day, & hour, & minute, & second, & flag);
+
+		str << day << "." << month << "." << year << " " << hour << ":" << minute << ":" << second;
+
+		return str.str();
+	};
+
 	while((feature = layer->GetNextFeature()) != NULL)
 	{
-		OGRPoint * position = (OGRPoint *) feature->GetGeometryRef();
-		OGRPoint * approx_position = (OGRPoint *) feature->GetGeomFieldRef("ApproxPosition");
+		OGRPoint * approx_position = (OGRPoint *) feature->GetGeometryRef();
+		OGRPoint * position = (OGRPoint *) feature->GetGeomFieldRef("Position");
 
 		printf("Field num = %u:\n\n\
 \tApprox position = (%lf, %lf, %lf)\n\
 \tPosition = (%lf, %lf, %lf)\n\
 \tMarker name = %s\n\
+\tAntenna model = %s\n\
+\tAntenna type = %s\n\
+\tReciever model = %s\n\
+\tReciever type = %s\n\
+\tReciever version = %s\n\
+\tFirst time obs = %s [ %s ]\n\
+\tLast time obs = %s [ %s ]\n\
 \n",
 			feature->GetFieldCount(),
 			approx_position->getX(), approx_position->getY(), approx_position->getZ(),
 			position->getX(), position->getY(), position->getZ(),
-			feature->GetFieldAsString("MarkerName")
+			feature->GetFieldAsString("MarkerName"),
+			feature->GetFieldAsString("AntennaModel"),
+			feature->GetFieldAsString("AntennaType"),
+			feature->GetFieldAsString("RecieverModel"),
+			feature->GetFieldAsString("RecieverType"),
+			feature->GetFieldAsString("RecieverVersion"),
+			get_date("FirstObsDateTime").c_str(), feature->GetFieldAsString("FirstObsTimeType"),
+			get_date("LastObsDateTime").c_str(), feature->GetFieldAsString("LastObsTimeType")
 		);
 
 		OGRFeature::DestroyFeature(feature);
