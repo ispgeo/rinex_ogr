@@ -19,11 +19,10 @@ class CDateTime
 
 };
 
-class SObsSat
+class CObsSat
 {
 
 	const string _name;
-	const Vector3d _x0;
 	map<string, double> values;
 	Vector4d _pos;
 	Vector3d _a;
@@ -33,7 +32,7 @@ class SObsSat
 	
 	public:
 
-		SObsSat(ifstream & fl, const string & name, const Vector3d & x0, const vector<string> & types_of_observ);
+		CObsSat(ifstream & fl, const string & name, const vector<string> & types_of_observ);
 
 		// Расчитываем псевдодальность по http://www.navipedia.net/index.php/Ionosphere-free_Combination_for_Dual_Frequency_Receivers
 		double iono_free(const string & key_1, const string & key_2);
@@ -42,6 +41,7 @@ class SObsSat
 		inline double iono_free_P1_P2() { return iono_free("P1", "P2"); };
 
 		void eval(CNav & nav, const string & epoch_name);
+		void fx(const Vector3d & x0);
 		double w();
 
 		inline Vector4d pos() const { return _pos; };
@@ -56,13 +56,13 @@ class CObsEpoch
 
 	string _name;
 	unsigned _flag;
-	vector<SObsSat> _sats;
+	vector<CObsSat> _sats;
 
 	public:
 
-		CObsEpoch(ifstream & fl, const Vector3d & x0, const vector<string> & types_of_observ);
+		CObsEpoch(ifstream & fl, const vector<string> & types_of_observ);
 
-		vector<SObsSat> sats(CNav & nav);
+		vector<CObsSat> sats(CNav & nav);
 
 };
 
@@ -83,7 +83,7 @@ class CObs
 
 };
 
-Vector3d shift(vector<SObsSat> & sats);
+Vector3d shift(vector<CObsSat> & sats);
 
 #endif
 

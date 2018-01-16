@@ -69,14 +69,16 @@ void CLayer::load(const string & path)
 	for(auto & epoch : epochs)
 	{
         // Ищем спутники, для которых известно положение в данную эпоху
-		vector<SObsSat> sats = epoch.sats(nav);
+		vector<CObsSat> sats = epoch.sats(nav);
 
 		if(sats.size() < 4)
 			continue;
 
 		for(v = 0; v < 5; v++)
 		{
-			// TODO reeval sat pos
+			for(auto & sat : sats)
+				sat.fx(x);
+
 			MatrixXd shft = shift(sats);
 
 			if(! isnan(shft(0, 0)))
