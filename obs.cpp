@@ -251,7 +251,7 @@ CObsEpoch::CObsEpoch(ifstream & fl, const vector<string> & types_of_observ)
 
 		if(sat_ind % 12)
 			line_pos += 3;
-		else
+		else if (sat_ind < sat_num)
 		{
 			line = next_line(fl);
 			line_pos = 32;
@@ -260,7 +260,7 @@ CObsEpoch::CObsEpoch(ifstream & fl, const vector<string> & types_of_observ)
 
 	// ############################################################################
 	// Sats
-
+	
 	for(auto & sat : sat_name)
 		_sats.push_back(CObsSat(fl, sat, types_of_observ));
 }
