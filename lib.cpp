@@ -104,6 +104,11 @@ string find_file(const string & path, const vector<string> exts)
 
 // ############################################################################ 
 
+CDateTime::CDateTime()
+{
+	_year = _month = _day = _hour = _minute = _second = _seconds = 0;
+}
+
 CDateTime::CDateTime(const double y, const double m, const double d, const double h, const double mn, const double s) :
 	_year(y), _month(m), _day(d), _hour(h), _minute(mn), _second(s)
 {

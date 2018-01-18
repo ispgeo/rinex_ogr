@@ -11,7 +11,7 @@ class CDateTime
 
 	public:
 
-		CDateTime() { ; };
+		CDateTime();
 		CDateTime(const double y, const double m, const double d, const double h, const double mn, const double s);
 
 		static CDateTime from_epoch_name(const string & epoch_name);
