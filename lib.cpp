@@ -107,6 +107,8 @@ string find_file(const string & path, const vector<string> exts)
 CDateTime::CDateTime()
 {
 	_year = _month = _day = _hour = _minute = _second = _seconds = 0;
+
+	_is_set = false;
 }
 
 CDateTime::CDateTime(const double y, const double m, const double d, const double h, const double mn, const double s) :
@@ -134,6 +136,8 @@ CDateTime::CDateTime(const double y, const double m, const double d, const doubl
     const double day_of_week = fmod(floor(jd+0.5), 7);
 
 	_seconds = (fmod(dbe, 1) + day_of_week + 1) * 86400;
+
+	_is_set = true;
 }
 
 CDateTime CDateTime::from_epoch_name(const string & epoch_name)

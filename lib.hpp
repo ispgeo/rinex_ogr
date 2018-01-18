@@ -7,6 +7,7 @@
 class CDateTime
 {
 
+	bool _is_set;
 	double _year, _month, _day, _hour, _minute, _second, _seconds;
 
 	public:
@@ -16,6 +17,7 @@ class CDateTime
 
 		static CDateTime from_epoch_name(const string & epoch_name);
     
+		inline bool is_set() const { return _is_set; };
 		inline double year() const { return _year; };
 		inline double month() const { return _month; };
 		inline double day() const { return _day; };

@@ -117,7 +117,10 @@ OGRFeature * CLayer::GetNextFeature()
 		is_start_reading = false;
 
 		const CDateTime & first_obs = obs->first_obs();
-		const CDateTime & last_obs = obs->last_obs();
+		CDateTime last_obs = obs->last_obs();
+
+		if(! last_obs.is_set())
+			last_obs = first_obs;
 
 		feature->SetFID(0);
 		feature->SetGeometry(& approx_position);
