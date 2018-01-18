@@ -53,8 +53,8 @@ CLayer::CLayer(const string & fname)
 	// ############################################################################ 
 	// Rinex load and eval
 
-	obs.reset(new CObs(path + "o"));
-	nav.reset(new CNav(path + "N"));
+	obs.reset(new CObs(find_file(path, { "o", "O" })));
+	nav.reset(new CNav(find_file(path, { "n", "N" })));
 
 	eval();
 

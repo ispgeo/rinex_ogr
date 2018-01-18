@@ -31,6 +31,7 @@ string next_line(ifstream & fl);
 string substr_and_del_space(const string & line, const unsigned from, const unsigned num);
 string strip_space_in_start_and_end(const string & line);
 string name_from_date(const string & line, const unsigned begin, const unsigned sec_size);
+string find_file(const string & path, const vector<string> exts);
 
 #endif
 

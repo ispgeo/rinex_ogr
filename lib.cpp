@@ -84,6 +84,24 @@ string name_from_date(const string & line, const unsigned begin, const unsigned 
 	return name;
 }
 
+string find_file(const string & path, const vector<string> exts)
+{
+	if(exts.empty())
+		throw runtime_error("Exts array is empty");
+
+	for(auto & ext : exts)
+	{
+		const string fname = path + ext;
+
+		ifstream fl(fname);
+
+		if(fl.good())
+			return fname;
+	}
+
+	throw runtime_error("File " + path + exts[0] + " not found");
+}
+
 // ############################################################################ 
 
 CDateTime::CDateTime(const double y, const double m, const double d, const double h, const double mn, const double s) :
