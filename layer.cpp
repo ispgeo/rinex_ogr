@@ -117,10 +117,15 @@ OGRFeature * CLayer::GetNextFeature()
 		is_start_reading = false;
 
 		const CDateTime & first_obs = obs->first_obs();
+		const string first_obs_type = obs->first_obs_type().c_str();
 		CDateTime last_obs = obs->last_obs();
+		string last_obs_type = obs->last_obs_type().c_str();
 
 		if(! last_obs.is_set())
-			last_obs = first_obs;
+		{
+			last_obs = CDateTime::from_epoch_name(obs->epochs().back()->name());
+			last_obs_type = first_obs_type;
+		}
 
 		feature->SetFID(0);
 		feature->SetGeometry(& approx_position);
@@ -133,8 +138,8 @@ OGRFeature * CLayer::GetNextFeature()
 		feature->SetField("RecieverVersion", obs->reciever_version().c_str());
 		feature->SetField("FirstObsDateTime", first_obs.year(), first_obs.month(), first_obs.day(), first_obs.hour(), first_obs.minute(), first_obs.second());
 		feature->SetField("LastObsDateTime", last_obs.year(), last_obs.month(), last_obs.day(), last_obs.hour(), last_obs.minute(), last_obs.second());
-		feature->SetField("FirstObsTimeType", obs->first_obs_type().c_str());
-		feature->SetField("LastObsTimeType", obs->last_obs_type().c_str());
+		feature->SetField("FirstObsTimeType", first_obs_type.c_str());
+		feature->SetField("LastObsTimeType", last_obs_type.c_str());
 
 		return feature;
 	}
