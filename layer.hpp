@@ -3,8 +3,8 @@
 #define LAYER_HPP
 
 #include "all.hpp"
-#include "obs.hpp"
-#include "nav.hpp"
+#include "obs/obs.hpp"
+#include "nav/nav.hpp"
 
 class CLayer : public OGRLayer
 {

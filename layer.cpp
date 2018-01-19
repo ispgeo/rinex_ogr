@@ -73,12 +73,12 @@ void CLayer::eval()
 	Vector3d x(x0), x_result(0, 0, 0);
 
     // Эпохи
-    vector<CObsEpoch> & epochs = obs->epochs();
+    vector< shared_ptr<CObsEpoch> > & epochs = obs->epochs();
 
 	for(auto & epoch : epochs)
 	{
         // Ищем спутники, для которых известно положение в данную эпоху
-		vector<CObsSat> sats = epoch.sats(* nav);
+		vector<CObsSat> sats = epoch->sats(* nav);
 
 		if(sats.size() < 4)
 			continue;
@@ -88,7 +88,7 @@ void CLayer::eval()
 			for(auto & sat : sats)
 				sat.fx(x);
 
-			MatrixXd shft = shift(sats);
+			MatrixXd shft = CObsSat::shift(sats);
 
 			if(! isnan(shft(0, 0)))
 				x += shft;
