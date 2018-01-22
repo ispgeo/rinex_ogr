@@ -1,12 +1,12 @@
 
-#include "test/all.hpp"
-#include "test/base.hpp"
+#include "utils/all.hpp"
+#include "utils/base.hpp"
 
 int main(const int argc, const char * argv[])
 {
 	if(argc != 2)
 	{
-		perror("./test_1 RINEX_FNAME:");
+		perror("./display RINEX_FNAME:");
 
 		return -1;
 	}

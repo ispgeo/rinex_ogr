@@ -3,6 +3,7 @@
 # Параметры сборки:
 #
 # CMAKE_BUILD_TYPE=Debug или CMAKE_BUILD_TYPE=Release (по умолчанию)
+# BUILD_TESTS=ON/OFF
 #
 
 cmake_minimum_required(VERSION 3.0)
@@ -27,9 +28,24 @@ install(TARGETS rinex DESTINATION lib)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/rinex.hpp DESTINATION include)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rinex.pc DESTINATION lib/pkgconfig)
 
+############################################################################ 
+# Utils
+
+add_executable(display utils/base.cpp utils/display.cpp)
+target_link_libraries(display rinex ${GDAL_LIBRARY})
+
 #############################################################################
 # Testing
 
-add_executable(test_1 test/base.cpp test/1.cpp)
-target_link_libraries(test_1 rinex ${GDAL_LIBRARY})
+option(BUILD_TESTS "Build all of unit tests." OFF)
+
+if(BUILD_TESTS)
+
+	enable_testing()
+
+	add_executable(run_tests test/test.cpp)
+	target_link_libraries(run_tests rinex ${GDAL_LIBRARY} pthread gmock gmock_main gtest gtest_main)
+	add_test(html-tests run_tests)
+
+endif()
 
