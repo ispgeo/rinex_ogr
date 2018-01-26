@@ -20,27 +20,31 @@ CNavSat::CNavSat(ifstream & fl)
 	// ############################################################################ 
 	// BO
 	
-	auto load_BO = [ & ](const string & name_1, const string & name_2, const string & name_3, const string & name_4)
+	auto load_BO = [ & ](const vector<string> names)
 	{
 		string line = next_line(fl);
+		const unsigned num = 19, size = line.size();
+		unsigned next = 3;
+
 		replace(line.begin(), line.end(), 'D', 'E');
 
-		values[name_1] = stod(line.substr(3, 19));
-		values[name_2] = stod(line.substr(22, 19));
+		for(auto & name : names)
+		{
+			if(next >= size || next + num > size)
+				break;
 
-		if(! name_3.empty())
-			values[name_3] = stod(line.substr(41, 19));
+			values[name] = stod(line.substr(next, num));
 
-		if(! name_4.empty())
-			values[name_4] = stod(line.substr(60, 19));
+			next += num;
+		}
 	};
 
-	load_BO("IODE", "Crs", "Deln", "Mo");
-	load_BO("Cuc", "Ecc", "Cus", "SqrtA");
-	load_BO("TOE", "Cic", "OMEGA", "Cis");
-	load_BO("Io", "Crc", "Omega", "OMEGA_DOT");
-	load_BO("IDOT", "L2_CC", "GPS_W", "L2_P");
-	load_BO("SV_Acc", "SV_Health", "TGD", "IODC");
-	load_BO("Trans_time", "Fit_int", "", "");
+	load_BO({ "IODE", "Crs", "Deln", "Mo" });
+	load_BO({ "Cuc", "Ecc", "Cus", "SqrtA" });
+	load_BO({ "TOE", "Cic", "OMEGA", "Cis" });
+	load_BO({ "Io", "Crc", "Omega", "OMEGA_DOT" });
+	load_BO({ "IDOT", "L2_CC", "GPS_W", "L2_P" });
+	load_BO({ "SV_Acc", "SV_Health", "TGD", "IODC" });
+	load_BO({ "Trans_time", "Fit_int" });
 }
 
